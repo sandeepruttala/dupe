@@ -1,6 +1,6 @@
 import sys
 from Quartz.CoreGraphics import CGColorCreateGenericRGB
-from AppKit import NSButton, NSStackView, NSUserInterfaceLayoutOrientationVertical
+from AppKit import NSButton, NSStackView, NSUserInterfaceLayoutOrientationVertical, NSCircularBezelStyle
 from Cocoa import (
     NSApplication,
     NSStatusBar,
@@ -23,7 +23,11 @@ from Cocoa import (
     NSColor,
     NSVisualEffectView,
     NSVisualEffectMaterialPopover,
-    NSVisualEffectBlendingModeBehindWindow
+    NSVisualEffectBlendingModeBehindWindow,
+    NSFont,
+    NSEventMaskLeftMouseDown,
+    NSEventMaskRightMouseDown,
+    NSEventTypeRightMouseDown
 )
 
 # DraggableView enables dragging a borderless window
@@ -47,10 +51,16 @@ class AppDelegate(NSObject):
 
         self.status_item = NSStatusBar.systemStatusBar().statusItemWithLength_(NSVariableStatusItemLength)
         self.status_item.setTitle_("📋")
+        
+        # Set up left-click to toggle window
         self.status_item.button().setAction_("toggleWindow:")
         self.status_item.button().setTarget_(self)
-
+        
+        # Create menu for right-click
         self.createMenu()
+        
+        # Enable right-click menu while preserving left-click action
+        self.status_item.button().sendActionOn_(NSEventMaskLeftMouseDown | NSEventMaskRightMouseDown)
 
         popup_width, popup_height = 360, 450  # macOS lookup-style size
         self.popup_width = popup_width
@@ -108,25 +118,29 @@ class AppDelegate(NSObject):
         close_button.setAction_("closeWindow:")
         effect_view.addSubview_(close_button)
 
+
         self.window.setContentView_(effect_view)
         self.window.setDelegate_(self)
 
     def createMenu(self):
         self.menu = NSMenu.alloc().init()
 
-        toggle_item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_(
-            "Toggle Window", "toggleWindow:", ""
-        )
-        self.menu.addItem_(toggle_item)
-
+        # Only add the Quit option to the menu
         quit_item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_(
             "Quit", "quitApp:", ""
         )
+        quit_item.setTarget_(self)
         self.menu.addItem_(quit_item)
 
-        self.status_item.setMenu_(self.menu)
-
     def toggleWindow_(self, sender):
+        # Check if this is a right-click event
+        current_event = NSApplication.sharedApplication().currentEvent()
+        if current_event and current_event.type() == NSEventTypeRightMouseDown:
+            # Show the menu on right-click
+            self.status_item.popUpStatusItemMenu_(self.menu)
+            return
+            
+        # Handle left-click to toggle window
         if self.window_visible:
             self.window.orderOut_(None)
         else:
