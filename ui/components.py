@@ -1,4 +1,4 @@
-from Cocoa import NSMakeRect, NSButton, NSTextField, NSView, NSVisualEffectView, NSVisualEffectMaterialPopover, NSVisualEffectBlendingModeBehindWindow, NSColor
+from Cocoa import NSButton, NSMakeRect, NSTextField, NSView, NSVisualEffectView, NSVisualEffectMaterialPopover, NSVisualEffectBlendingModeBehindWindow, NSColor
 from Quartz.CoreGraphics import CGColorCreateGenericRGB
 from draggable_view import DraggableView
 
@@ -36,5 +36,14 @@ def create_effect_view(width, height, delegate):
     close_button.setTarget_(delegate)
     close_button.setAction_("closeWindow:")
     effect_view.addSubview_(close_button)
+
+    for idx, item in enumerate(delegate.clipboard_manager.history):
+        button = NSButton.alloc().initWithFrame_(NSMakeRect(10, height - 70 - idx * 40, width - 20, 30))
+        button.setTitle_(item[:50])
+        button.setBezelStyle_(4)
+        button.setTarget_(delegate.clipboard_manager)
+        button.setAction_("recopy:")
+        button.setTag_(idx)
+        effect_view.addSubview_(button)
 
     return effect_view
